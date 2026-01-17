@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CarColorRepository extends JpaRepository<CarColor, Long> {
 
@@ -13,6 +14,15 @@ public interface CarColorRepository extends JpaRepository<CarColor, Long> {
     SELECT cc.color.name
     FROM CarColor cc
     WHERE cc.car.id = :carId
-""")
+    """)
     List<String> findColorNamesByCarId(@Param("carId") Long carId);
+
+    @Query("""
+   SELECT cc
+   FROM CarColor cc
+   JOIN cc.color col
+   WHERE cc.car.id = :carId
+     AND LOWER(col.name) = LOWER(:colorName)
+""")
+    Optional<CarColor> findByCarIdAndColorName(Long carId, String colorName);
 }

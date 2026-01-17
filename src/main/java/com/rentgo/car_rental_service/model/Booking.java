@@ -48,6 +48,9 @@ public class Booking {
     @Column(name="personal_id", length=30)
     private String personalId;
 
+    @Column(name="driving_license", length=30)
+    private String drivingLicense;
+
     @Column(name="total_price", precision=10, scale=2)
     private BigDecimal totalPrice;
 

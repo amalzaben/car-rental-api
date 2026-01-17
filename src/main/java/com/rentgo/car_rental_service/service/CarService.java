@@ -16,7 +16,7 @@ import com.rentgo.car_rental_service.repository.CarColorRepository;
 import com.rentgo.car_rental_service.repository.CarRepository;
 import com.rentgo.car_rental_service.repository.ColorRepository;
 import com.rentgo.car_rental_service.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
