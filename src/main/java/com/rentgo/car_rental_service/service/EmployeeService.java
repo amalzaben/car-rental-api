@@ -1,9 +1,6 @@
 package com.rentgo.car_rental_service.service;
 
-import com.rentgo.car_rental_service.dto.controller.response.ApproveBookingResponse;
-import com.rentgo.car_rental_service.dto.controller.response.BookingResponse;
-import com.rentgo.car_rental_service.dto.controller.response.PendingBookingResponse;
-import com.rentgo.car_rental_service.dto.controller.response.RejectBookingResponse;
+import com.rentgo.car_rental_service.dto.controller.response.*;
 import com.rentgo.car_rental_service.dto.service.ManualCreateBookingCommand;
 import com.rentgo.car_rental_service.exception.ConflictException;
 import com.rentgo.car_rental_service.exception.ForbiddenException;
@@ -22,6 +19,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -38,6 +37,8 @@ public class EmployeeService {
     private final CarColorRepository carColorRepository;
     private final PickUpRepository pickupRepository;
     private final DropOffRepository dropoffRepository;
+    private final PickUpRepository pickUpRepository;
+    private final DropOffRepository dropOffRepository;
 
     @Transactional(readOnly = true)
     public Page<PendingBookingResponse> listPendingBookings(Long employeeId, Pageable pageable) {
@@ -263,6 +264,193 @@ public class EmployeeService {
                 booking.getStatus(),
                 booking.getCreatedAt()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<DueDeliveryResponse> getTodayUnassignedDeliveries(Long employeeId) {
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        if (employee.getRole() != EmployeeRole.delivery) {
+            throw new ForbiddenException("Employee is not a delivery employee");
+        }
+
+        LocalDate today = LocalDate.now(); // optionally: LocalDate.now(ZoneId.of("Asia/Hebron"))
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+
+        List<PickUp> pickups = pickUpRepository
+                .findTodayUnassignedPickups(startOfDay, endOfDay);
+
+        List<DropOff> dropoffs = dropOffRepository
+                .findTodayUnassignedDropoffs(startOfDay, endOfDay);
+
+        List<DueDeliveryResponse> result = new ArrayList<>(pickups.size() + dropoffs.size());
+
+        for (PickUp p : pickups) {
+            Booking b = p.getBooking();
+            Car c = b.getCar();
+
+            result.add(new DueDeliveryResponse(
+                    p.getId(),
+                    b.getId(),
+                    DeliveryType.PICKUP,
+                    p.getDate(),
+                    b.getLocation(),
+                    b.getPhoneNumber(),
+                    c.getPicture(),
+                    c.getType(),
+                    c.getFamily()
+            ));
+        }
+
+
+        for (DropOff d : dropoffs) {
+            Booking b = d.getBooking();
+            Car c = b.getCar();
+
+            result.add(new DueDeliveryResponse(
+                    d.getId(),
+                    b.getId(),
+                    DeliveryType.DROPOFF,
+                    d.getDate(),
+                    b.getLocation(),
+                    b.getPhoneNumber(),
+                    c.getPicture(),
+                    c.getType(),
+                    c.getFamily()
+            ));
+        }
+
+        // Optional: sort by due time
+        result.sort(Comparator.comparing(DueDeliveryResponse::dueDate));
+
+        return result;
+    }
+
+
+
+
+    @Transactional
+    public DueDeliveryResponse assignPickup(Long employeeId, Long pickupId) {
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        if (employee.getRole() != EmployeeRole.delivery) {
+            throw new ForbiddenException("Employee is not a delivery employee");
+        }
+
+        PickUp pickup = pickUpRepository.findByIdForUpdate(pickupId)
+                .orElseThrow(() -> new ResourceNotFoundException("PickUp not found"));
+
+        if (pickup.isAssigned()) {
+            throw new ConflictException("PickUp already assigned");
+        }
+
+        pickup.assignToEmployee(employeeId);
+
+        Booking b = pickup.getBooking();
+        Car c = b.getCar();
+
+        return new DueDeliveryResponse(
+                pickup.getId(),
+                b.getId(),
+                DeliveryType.PICKUP,
+                pickup.getDate(),
+                b.getLocation(),
+                b.getPhoneNumber(),
+                c.getPicture(),
+                c.getType(),
+                c.getFamily()
+        );
+    }
+
+    @Transactional
+    public DueDeliveryResponse assignDropoff(Long employeeId, Long dropoffId) {
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        if (employee.getRole() != EmployeeRole.delivery) {
+            throw new ForbiddenException("Employee is not a delivery employee");
+        }
+
+        DropOff dropoff = dropOffRepository.findByIdForUpdate(dropoffId)
+                .orElseThrow(() -> new ResourceNotFoundException("DropOff not found"));
+
+        if (dropoff.isAssigned()) {
+            throw new ConflictException("DropOff already assigned");
+        }
+
+        dropoff.assignToEmployee(employeeId);
+
+        Booking b = dropoff.getBooking();
+        Car c = b.getCar();
+
+        return new DueDeliveryResponse(
+                dropoff.getId(),
+                b.getId(),
+                DeliveryType.DROPOFF,
+                dropoff.getDate(),
+                b.getLocation(),
+                b.getPhoneNumber(),
+                c.getPicture(),
+                c.getType(),
+                c.getFamily()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<DueDeliveryResponse> getAssignedDeliveries(Long employeeId) {
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        if (employee.getRole() != EmployeeRole.delivery) {
+            throw new ForbiddenException("Employee is not a delivery employee");
+        }
+
+        List<PickUp> pickups = pickUpRepository.findAssignedToEmployee(employeeId);
+        List<DropOff> dropoffs = dropOffRepository.findAssignedToEmployee(employeeId);
+
+        List<DueDeliveryResponse> result = new ArrayList<>(pickups.size() + dropoffs.size());
+
+        for (PickUp p : pickups) {
+            Booking b = p.getBooking();
+            Car c = b.getCar();
+            result.add(new DueDeliveryResponse(
+                    p.getId(),
+                    b.getId(),
+                    DeliveryType.PICKUP,
+                    p.getDate(),
+                    b.getLocation(),
+                    b.getPhoneNumber(),
+                    c.getPicture(),
+                    c.getType(),
+                    c.getFamily()
+            ));
+        }
+
+        for (DropOff d : dropoffs) {
+            Booking b = d.getBooking();
+            Car c = b.getCar();
+            result.add(new DueDeliveryResponse(
+                    d.getId(),
+                    b.getId(),
+                    DeliveryType.DROPOFF,
+                    d.getDate(),
+                    b.getLocation(),
+                    b.getPhoneNumber(),
+                    c.getPicture(),
+                    c.getType(),
+                    c.getFamily()
+            ));
+        }
+
+        result.sort(Comparator.comparing(DueDeliveryResponse::dueDate));
+        return result;
     }
 
     //helper method

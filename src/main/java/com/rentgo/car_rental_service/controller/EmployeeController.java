@@ -3,10 +3,7 @@ package com.rentgo.car_rental_service.controller;
 import com.rentgo.car_rental_service.dto.controller.request.ApproveBookingRequest;
 import com.rentgo.car_rental_service.dto.controller.request.ManualCreateBookingRequest;
 import com.rentgo.car_rental_service.dto.controller.request.RejectBookingRequest;
-import com.rentgo.car_rental_service.dto.controller.response.ApproveBookingResponse;
-import com.rentgo.car_rental_service.dto.controller.response.BookingResponse;
-import com.rentgo.car_rental_service.dto.controller.response.PendingBookingResponse;
-import com.rentgo.car_rental_service.dto.controller.response.RejectBookingResponse;
+import com.rentgo.car_rental_service.dto.controller.response.*;
 import com.rentgo.car_rental_service.dto.service.ManualCreateBookingCommand;
 import com.rentgo.car_rental_service.mapper.ManualBookingMapper;
 import com.rentgo.car_rental_service.service.EmployeeService;
@@ -18,6 +15,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/employees")
@@ -68,6 +67,34 @@ public class EmployeeController {
         BookingResponse response = employeeService.manuallyCreateBooking(cmd);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping("/{employeeId}/deliveries/today")
+    public ResponseEntity<List<DueDeliveryResponse>> getTodayDeliveries(@PathVariable Long employeeId) {
+        return ResponseEntity.ok(employeeService.getTodayUnassignedDeliveries(employeeId));
+    }
+
+    @PostMapping("/{employeeId}/pickups/{pickupId}/assign")
+    public ResponseEntity<DueDeliveryResponse> assignPickup(
+            @PathVariable Long employeeId,
+            @PathVariable Long pickupId
+    ) {
+        return ResponseEntity.ok(employeeService.assignPickup(employeeId, pickupId));
+    }
+    @PostMapping("/{employeeId}/dropoffs/{dropoffId}/assign")
+    public ResponseEntity<DueDeliveryResponse> assignDropoff(
+            @PathVariable Long employeeId,
+            @PathVariable Long dropoffId
+    ) {
+        return ResponseEntity.ok(employeeService.assignDropoff(employeeId, dropoffId));
+    }
+
+    @GetMapping("/{employeeId}/deliveries/assigned")
+    public ResponseEntity<List<DueDeliveryResponse>> getAssignedDeliveries(@PathVariable Long employeeId) {
+        return ResponseEntity.ok(employeeService.getAssignedDeliveries(employeeId));
+    }
+
+
+
 
 
 

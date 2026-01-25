@@ -106,9 +106,9 @@ public class AuthenticationService {
                 .user(user)
                 .role(registerEmployeeCommand.employeeRole())
                 .name(registerEmployeeCommand.name())
-                .phoneNumber(registerEmployeeCommand.phoneNumber())
                 .email(registerEmployeeCommand.email())
                 .dob(registerEmployeeCommand.dob())
+                .idNumber(registerEmployeeCommand.idNumber())
                 .build();
         employeeRepository.save(employee);
         return new RegisterEmployeeResponse(
@@ -117,9 +117,9 @@ public class AuthenticationService {
                 user.getRole(),
                 employee.getRole(),
                 user.getUsername(),
+                employee.getIdNumber(),
                 employee.getName(),
                 employee.getEmail(),
-                employee.getPhoneNumber(),
                 user.getProfilePicture(),
                 employee.getDob()
         );
@@ -131,7 +131,7 @@ public class AuthenticationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // 1. Verify old password (hashed)
+
         if (!PasswordUtil.matches(request.oldPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Old password is incorrect");
         }

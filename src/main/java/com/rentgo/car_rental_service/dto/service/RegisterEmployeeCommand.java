@@ -8,6 +8,7 @@ import java.time.LocalDate;
 public record RegisterEmployeeCommand(
         @NotNull String username,
         @NotNull String password,
+        @NotNull String idNumber,
         @NotNull String name,
         @NotNull String email,
         @NotNull String phoneNumber,

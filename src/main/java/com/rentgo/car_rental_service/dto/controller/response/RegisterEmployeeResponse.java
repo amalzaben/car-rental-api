@@ -12,9 +12,9 @@ public record RegisterEmployeeResponse(
         UserRole role,
         EmployeeRole employeeRole,
         String username,
+        String idNumber,
         String name,
         String email,
-        String phoneNumber,
         String profilePicture,
         LocalDate dob
 ) {

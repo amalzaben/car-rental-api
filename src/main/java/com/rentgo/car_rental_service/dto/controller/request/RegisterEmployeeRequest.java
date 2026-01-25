@@ -9,6 +9,7 @@ import java.time.LocalDate;
 public record RegisterEmployeeRequest(
          String username,
         String password,
+         String idNumber,
          String name,
          String email,
          String phoneNumber,
