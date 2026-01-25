@@ -131,19 +131,22 @@ public class AuthenticationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // 1. Verify old password
-        if (!user.getPassword().equals(request.oldPassword())) {
+        // 1. Verify old password (hashed)
+        if (!PasswordUtil.matches(request.oldPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Old password is incorrect");
         }
 
-        // 2. Prevent same password
-        if (request.oldPassword().equals(request.newPassword())) {
-            throw new IllegalArgumentException("New password must be different");
+        // 2. Prevent reusing same password
+        if (PasswordUtil.matches(request.newPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("New password must be different from old password");
         }
 
-        // 3. Update
-        user.setPassword(request.newPassword());
+        // 3. Encode and update
+        String encodedNewPassword = PasswordUtil.encode(request.newPassword());
+        user.setPassword(encodedNewPassword);
+
         userRepository.save(user);
     }
+
 
 }
