@@ -2,10 +2,12 @@ package com.rentgo.car_rental_service.service;
 
 import com.rentgo.car_rental_service.dto.controller.response.*;
 import com.rentgo.car_rental_service.dto.service.ManualCreateBookingCommand;
+import com.rentgo.car_rental_service.dto.service.UpdateEmployeeCommand;
 import com.rentgo.car_rental_service.exception.ConflictException;
 import com.rentgo.car_rental_service.exception.ForbiddenException;
 import com.rentgo.car_rental_service.exception.ResourceNotFoundException;
 import com.rentgo.car_rental_service.mapper.BookingMapper;
+import com.rentgo.car_rental_service.mapper.EmployeeMapper;
 import com.rentgo.car_rental_service.model.*;
 import com.rentgo.car_rental_service.model.ENUM.*;
 import com.rentgo.car_rental_service.repository.*;
@@ -39,6 +41,7 @@ public class EmployeeService {
     private final DropOffRepository dropoffRepository;
     private final PickUpRepository pickUpRepository;
     private final DropOffRepository dropOffRepository;
+    private final EmployeeMapper employeeMapper;
 
     @Transactional(readOnly = true)
     public Page<PendingBookingResponse> listPendingBookings(Long employeeId, Pageable pageable) {
@@ -452,6 +455,42 @@ public class EmployeeService {
         result.sort(Comparator.comparing(DueDeliveryResponse::dueDate));
         return result;
     }
+
+    @Transactional
+    public EmployeeResponse updateEmployeeInfo(UpdateEmployeeCommand cmd) {
+
+        Employee employee = employeeRepository.findById(cmd.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        if (cmd.getIdNumber() != null) {
+            employee.setIdNumber(cmd.getIdNumber().trim());
+        }
+
+        if (cmd.getName() != null) {
+            employee.setName(cmd.getName().trim());
+        }
+
+        if (cmd.getEmail() != null) {
+            String normalizedEmail = cmd.getEmail().trim().toLowerCase();
+
+            if (Boolean.TRUE.equals(
+                    employeeRepository.existsByEmailIgnoreCaseAndIdNot(cmd.getEmail(), cmd.getEmployeeId())
+            )) {
+                throw new ConflictException("Email already in use");
+            }
+
+
+            employee.setEmail(normalizedEmail);
+        }
+
+        if (cmd.getDob() != null) {
+            employee.setDob(cmd.getDob());
+        }
+
+        employeeRepository.save(employee);
+        return employeeMapper.toResponse(employee);
+    }
+
 
     //helper method
     private void validateCarColorAvailabilityOrDates(Car car, CarColor carColor,

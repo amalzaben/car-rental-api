@@ -3,8 +3,11 @@ package com.rentgo.car_rental_service.controller;
 import com.rentgo.car_rental_service.dto.controller.request.ApproveBookingRequest;
 import com.rentgo.car_rental_service.dto.controller.request.ManualCreateBookingRequest;
 import com.rentgo.car_rental_service.dto.controller.request.RejectBookingRequest;
+import com.rentgo.car_rental_service.dto.controller.request.UpdateEmployeeRequest;
 import com.rentgo.car_rental_service.dto.controller.response.*;
 import com.rentgo.car_rental_service.dto.service.ManualCreateBookingCommand;
+import com.rentgo.car_rental_service.dto.service.UpdateEmployeeCommand;
+import com.rentgo.car_rental_service.mapper.EmployeeMapper;
 import com.rentgo.car_rental_service.mapper.ManualBookingMapper;
 import com.rentgo.car_rental_service.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,18 @@ public class EmployeeController {
 
     private final EmployeeService employeeService;
     private final ManualBookingMapper manualBookingMapper;
+    private final EmployeeMapper employeeMapper;
+
+    @PatchMapping("/{employeeId}")
+    public ResponseEntity<EmployeeResponse> updateEmployeeInfo(
+            @PathVariable Long employeeId,
+            @RequestBody UpdateEmployeeRequest request
+    ) {
+        UpdateEmployeeCommand cmd = employeeMapper.toUpdateCommand(employeeId, request);
+        EmployeeResponse response = employeeService.updateEmployeeInfo(cmd);
+        return ResponseEntity.ok(response);
+    }
+
 
     @GetMapping("/{employeeId}/bookings/pending")
     public ResponseEntity<Page<PendingBookingResponse>> listPendingBookings(

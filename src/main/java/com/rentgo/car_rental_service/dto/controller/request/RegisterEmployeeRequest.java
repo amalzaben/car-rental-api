@@ -12,7 +12,6 @@ public record RegisterEmployeeRequest(
          String idNumber,
          String name,
          String email,
-         String phoneNumber,
         String profilePicture,
         LocalDate dob,
          EmployeeRole employeeRole

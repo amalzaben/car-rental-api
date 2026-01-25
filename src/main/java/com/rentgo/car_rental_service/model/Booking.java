@@ -51,7 +51,7 @@ public class Booking {
     @Column(name="driving_license", length=30)
     private String drivingLicense;
 
-    @Column(name="total_price", precision=10, scale=2)
+    @Column(name="total_price", precision=10,  scale=2)
     private BigDecimal totalPrice;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
