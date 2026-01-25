@@ -1,5 +1,6 @@
 package com.rentgo.car_rental_service.service;
 
+import com.rentgo.car_rental_service.dto.controller.request.ResetPasswordRequest;
 import com.rentgo.car_rental_service.dto.controller.response.LoginResponse;
 import com.rentgo.car_rental_service.dto.controller.response.RegisterEmployeeResponse;
 import com.rentgo.car_rental_service.dto.service.LoginCommand;
@@ -123,4 +124,26 @@ public class AuthenticationService {
                 employee.getDob()
         );
     }
+
+    @Transactional
+    public void resetPassword(Long userId, ResetPasswordRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // 1. Verify old password
+        if (!user.getPassword().equals(request.oldPassword())) {
+            throw new IllegalArgumentException("Old password is incorrect");
+        }
+
+        // 2. Prevent same password
+        if (request.oldPassword().equals(request.newPassword())) {
+            throw new IllegalArgumentException("New password must be different");
+        }
+
+        // 3. Update
+        user.setPassword(request.newPassword());
+        userRepository.save(user);
+    }
+
 }

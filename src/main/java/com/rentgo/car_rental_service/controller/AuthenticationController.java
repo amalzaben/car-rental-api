@@ -3,6 +3,7 @@ package com.rentgo.car_rental_service.controller;
 import com.rentgo.car_rental_service.dto.controller.request.LoginRequest;
 import com.rentgo.car_rental_service.dto.controller.request.RegisterEmployeeRequest;
 import com.rentgo.car_rental_service.dto.controller.request.RegisterRequest;
+import com.rentgo.car_rental_service.dto.controller.request.ResetPasswordRequest;
 import com.rentgo.car_rental_service.dto.controller.response.LoginResponse;
 import com.rentgo.car_rental_service.dto.controller.response.RegisterEmployeeResponse;
 import com.rentgo.car_rental_service.dto.controller.response.RegisterResponse;
@@ -46,11 +47,15 @@ public class  AuthenticationController {
                 (authenticationMapper.toRegisterEmployeeCommand(registerEmployeeRequest));
         return ResponseEntity.ok(registerEmployeeResponse);
     }
-//
-//    @PostMapping("/resend")
-//    public ResponseEntity<?> resendVerificationCode(@RequestParam(name="email") String email) {
-//        authenticationService.resendVerificationCode(email);
-//        return ResponseEntity.ok("Verification code sent");
-//    }
+
+    @PatchMapping("/{userId}/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @PathVariable Long userId,
+            @RequestBody ResetPasswordRequest request
+    ) {
+        authenticationService.resetPassword(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
 }
 
