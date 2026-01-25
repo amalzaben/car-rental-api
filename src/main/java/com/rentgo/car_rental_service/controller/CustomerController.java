@@ -1,10 +1,7 @@
 package com.rentgo.car_rental_service.controller;
 
 import com.rentgo.car_rental_service.dto.controller.request.CreateBookingRequest;
-import com.rentgo.car_rental_service.dto.controller.response.AddFavoriteCarResponse;
-import com.rentgo.car_rental_service.dto.controller.response.BookingDetailsResponse;
-import com.rentgo.car_rental_service.dto.controller.response.BookingResponse;
-import com.rentgo.car_rental_service.dto.controller.response.CarResponse;
+import com.rentgo.car_rental_service.dto.controller.response.*;
 import com.rentgo.car_rental_service.dto.service.CreateBookingCommand;
 import com.rentgo.car_rental_service.mapper.BookingMapper;
 import com.rentgo.car_rental_service.model.ENUM.BookingStatus;
@@ -17,6 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/customers")
@@ -87,6 +86,17 @@ public class CustomerController {
         BookingDetailsResponse response = customerService.getBookingDetails(customerId, bookingId);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{userId}/notifications")
+    public ResponseEntity<List<CustomerNotificationResponse>> listNotifications(
+            @PathVariable Long userId
+    ) {
+        List<CustomerNotificationResponse> list =
+                customerService.listCustomerNotifications(userId);
+
+        return ResponseEntity.ok(list);
+    }
+
 
 
 

@@ -42,6 +42,7 @@ public class EmployeeService {
     private final PickUpRepository pickUpRepository;
     private final DropOffRepository dropOffRepository;
     private final EmployeeMapper employeeMapper;
+    private ManagerNotificationRepository managerNotificationRepository;
 
     @Transactional(readOnly = true)
     public Page<PendingBookingResponse> listPendingBookings(Long employeeId, Pageable pageable) {
@@ -97,7 +98,9 @@ public class EmployeeService {
 
         // Create customer notification
         String msg = (reason == null || reason.isBlank())
-                ? "Your booking request was rejected."
+                ? "Your booking request for " +
+                booking.getCar().getFamily()+" "+ booking.getCar().getType()+
+                "was rejected."
                 : "Your booking request was rejected. Reason: " + reason;
 
         CustomerNotification notification = CustomerNotification.builder()
@@ -108,6 +111,9 @@ public class EmployeeService {
                 .build();
 
         customerNotificationRepository.save(notification);
+
+        booking.getCarColor().setAvailable(false);
+        carColorRepository.save(booking.getCarColor());
 
         return new RejectBookingResponse(
                 booking.getId(),
@@ -155,11 +161,14 @@ public class EmployeeService {
         paymentRepository.save(payment);
         bookingRepository.save(booking);
 
-        // update car status
-        // booking.getCar().setStatus(CarStatus.booked);
-        // carRepository.save(booking.getCar());
+         booking.getCarColor().setAvailable(false);
+         carColorRepository.save(booking.getCarColor());
 
-        String msg = "Your booking request was approved.";
+        String msg = "your booking for " +
+                booking.getCar().getFamily()+" "+ booking.getCar().getType()+
+                " has been confirmed." +
+                booking.getTotalPrice() +
+                "$ has been withdrawn from your card";
         if (note != null && !note.isBlank()) {
             msg += " Note: " + note;
         }
@@ -248,6 +257,32 @@ public class EmployeeService {
                 .build();
 
         bookingRepository.save(booking);
+
+        String carType = (booking.getCar() != null && booking.getCar().getType() != null)
+                ? booking.getCar().getType()
+                : "UNKNOWN_TYPE";
+
+        String carName = (booking.getCar() != null && booking.getCar().getFamily() != null)
+                ? booking.getCar().getFamily()
+                : "Car";
+
+        String msg = String.format(
+                "New booking created: %s (%s) booked from %s to %s.",
+                carName,
+                carType,
+                booking.getStartDate(),
+                booking.getEndDate()
+        );
+
+        ManagerNotification managerNotification = ManagerNotification.builder()
+                .type(ManagerNotificationType.BOOKING_CREATED)
+                .booking(booking)
+                .message(msg)
+                .isRead(false)
+                .build();
+
+        managerNotificationRepository.save(managerNotification);
+
 
         DropOff dropOff = new DropOff(booking, cmd.startDate().atStartOfDay());
         dropoffRepository.save(dropOff);
