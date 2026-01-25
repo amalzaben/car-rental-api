@@ -156,4 +156,9 @@ public class CarService {
         }
     }
 
+    public Long getNextCarId() {
+        Long maxId = carRepository.findMaxId();
+        return maxId + 1;
+    }
+
 }

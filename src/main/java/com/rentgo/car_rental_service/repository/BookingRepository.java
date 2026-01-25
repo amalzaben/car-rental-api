@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -69,6 +71,23 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 """)
     Optional<Booking> findByIdWithPaymentAndCar(@Param("bookingId") Long bookingId);
 
+
+    @Query("""
+    SELECT CASE WHEN COUNT(b) > 0 THEN TRUE ELSE FALSE END
+    FROM Booking b
+    WHERE b.car.id = :carId
+      AND b.carColor.id = :carColorId
+      AND b.status IN :statuses
+      AND b.startDate <= :requestedEndDate
+      AND b.endDate >= :requestedStartDate
+""")
+    boolean existsOverlappingBooking(
+            @Param("carId") Long carId,
+            @Param("carColorId") Long carColorId,
+            @Param("statuses") Collection<BookingStatus> statuses,
+            @Param("requestedStartDate") LocalDate requestedStartDate,
+            @Param("requestedEndDate") LocalDate requestedEndDate
+    );
 
 
 }

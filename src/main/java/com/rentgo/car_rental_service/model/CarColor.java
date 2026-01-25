@@ -26,4 +26,7 @@ public class CarColor {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "color_id", nullable = false)
     private Color color;
+
+    @Column(name = "available", nullable = false)
+    private boolean available = true;
 }

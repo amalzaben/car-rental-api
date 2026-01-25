@@ -183,3 +183,27 @@ CREATE TABLE manager_notifications (
   CONSTRAINT fk_manager_notifications_booking
     FOREIGN KEY (booking_id) REFERENCES bookings(id)
 );
+
+ALTER TABLE car_color
+ADD COLUMN available BOOLEAN NOT NULL DEFAULT TRUE;
+
+CREATE TABLE pickup (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  booking_id BIGINT NOT NULL,
+  pickup_date DATETIME NOT NULL,
+  CONSTRAINT fk_pickup_booking 
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) 
+    ON DELETE CASCADE,
+  CONSTRAINT uq_pickup_booking UNIQUE (booking_id)
+);
+
+CREATE TABLE dropoff (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  booking_id BIGINT NOT NULL,
+  dropoff_date DATETIME NOT NULL,
+  CONSTRAINT fk_dropoff_booking 
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) 
+    ON DELETE CASCADE,
+  CONSTRAINT uq_dropoff_booking UNIQUE (booking_id)
+);
+select * from users;

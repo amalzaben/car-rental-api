@@ -67,4 +67,9 @@ public class CarController {
         );
     }
 
+    @GetMapping("/next-id")
+    public ResponseEntity<Long> getNextCarId() {
+        return ResponseEntity.ok(carService.getNextCarId());
+    }
+
 }

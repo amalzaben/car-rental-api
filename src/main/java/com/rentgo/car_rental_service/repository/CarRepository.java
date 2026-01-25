@@ -65,4 +65,7 @@ public interface CarRepository extends JpaRepository<Car, Long> {
             @Param("status") CarStatus status,
             Pageable pageable
     );
+
+    @Query("SELECT COALESCE(MAX(c.id), 0) FROM Car c")
+    Long findMaxId();
 }

@@ -19,8 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,8 @@ public class EmployeeService {
     private final UserRepository userRepository;
     private final CarRepository carRepository;
     private final CarColorRepository carColorRepository;
+    private final PickUpRepository pickupRepository;
+    private final DropOffRepository dropoffRepository;
 
     @Transactional(readOnly = true)
     public Page<PendingBookingResponse> listPendingBookings(Long employeeId, Pageable pageable) {
@@ -203,6 +207,8 @@ public class EmployeeService {
                         "Color '" + cmd.carColor() + "' not available for this car"
                 ));
 
+        validateCarColorAvailabilityOrDates(car, carColor, cmd.startDate(), cmd.endDate());
+
         if (cmd.endDate().isBefore(cmd.startDate())) {
             throw new ConflictException("End date must be after start date");
         }
@@ -239,6 +245,15 @@ public class EmployeeService {
 
         bookingRepository.save(booking);
 
+        DropOff dropOff = new DropOff(booking, cmd.startDate().atStartOfDay());
+        dropoffRepository.save(dropOff);
+
+
+        PickUp pickUp = new PickUp(booking, cmd.endDate().atStartOfDay());
+        pickupRepository.save(pickUp);
+        carColor.setAvailable(false);
+        carColorRepository.save(carColor);
+
         return new BookingResponse(
                 booking.getId(),
                 booking.getCar().getId(),
@@ -249,4 +264,26 @@ public class EmployeeService {
                 booking.getCreatedAt()
         );
     }
+
+    //helper method
+    private void validateCarColorAvailabilityOrDates(Car car, CarColor carColor,
+                                                     LocalDate startDate, LocalDate endDate) {
+        if (carColor.isAvailable()) {
+            return;
+        }
+
+        boolean hasOverlap = bookingRepository.existsOverlappingBooking(
+                car.getId(),
+                carColor.getId(),
+                List.of(BookingStatus.approved, BookingStatus.pending),
+                startDate,
+                endDate
+        );
+
+        if (hasOverlap) {
+            throw new ConflictException("Car is already booked for the selected dates");
+        }
+
+    }
+
 }

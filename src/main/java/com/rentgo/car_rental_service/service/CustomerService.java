@@ -27,8 +27,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,8 @@ public class CustomerService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
+    private final DropOffRepository dropoffRepository;
+    private final PickUpRepository pickupRepository;
 
     @Transactional
     public AddFavoriteCarResponse addCarToFavorites(Long userId, Long carId) {
@@ -133,9 +137,15 @@ public class CustomerService {
                         "Color '" + cmd.carColor() + "' not available for this car"
                 ));
 
+        if (!carColor.isAvailable()) {
+            throw new ConflictException("This color is currently not available");
+        }
+
         if (cmd.endDate().isBefore(cmd.startDate())) {
             throw new ConflictException("End date must be after start date");
         }
+
+        validateCarColorAvailabilityOrDates(car, carColor, cmd.startDate(), cmd.endDate());
 
         long days = ChronoUnit.DAYS.between(cmd.startDate(), cmd.endDate()) + 1;
         BigDecimal totalPrice = car.getPrice().multiply(BigDecimal.valueOf(days));
@@ -155,8 +165,8 @@ public class CustomerService {
                 .endDate(cmd.endDate())
                 .location(cmd.location())
                 .phoneNumber(cmd.phoneNumber())
-                .personalId(cmd.personalIdImage())     // as you currently store it
-                .drivingLicense(cmd.drivingLicense())  // assuming field exists in Booking
+                .personalId(cmd.personalIdImage())
+                .drivingLicense(cmd.drivingLicense())
                 .totalPrice(totalPrice)
                 .payment(payment)
                 .status(BookingStatus.pending)
@@ -164,6 +174,17 @@ public class CustomerService {
                 .build();
 
         bookingRepository.save(booking);
+
+
+        DropOff dropOff = new DropOff(booking, cmd.startDate().atStartOfDay());
+        dropoffRepository.save(dropOff);
+
+
+        PickUp pickUp = new PickUp(booking, cmd.endDate().atStartOfDay());
+        pickupRepository.save(pickUp);
+
+        carColor.setAvailable(false);
+        carColorRepository.save(carColor);
 
         return new BookingResponse(
                 booking.getId(),
@@ -175,6 +196,7 @@ public class CustomerService {
                 booking.getCreatedAt()
         );
     }
+
 
     @Transactional(readOnly = true)
     public Page<BookingResponse> listCustomerBookings(
@@ -218,6 +240,27 @@ public class CustomerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
         return bookingMapper.toDetailsResponse(booking);
+    }
+
+    //helper method
+    private void validateCarColorAvailabilityOrDates(Car car, CarColor carColor,
+                                                     LocalDate startDate, LocalDate endDate) {
+        if (carColor.isAvailable()) {
+            return;
+        }
+
+        boolean hasOverlap = bookingRepository.existsOverlappingBooking(
+                car.getId(),
+                carColor.getId(),
+                List.of(BookingStatus.approved, BookingStatus.pending),
+                startDate,
+                endDate
+        );
+
+        if (hasOverlap) {
+            throw new ConflictException("Car is already booked for the selected dates");
+        }
+
     }
 
 

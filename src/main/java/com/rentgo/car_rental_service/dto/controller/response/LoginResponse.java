@@ -10,6 +10,7 @@ import java.time.LocalDate;
 
 @Builder
 public record LoginResponse(
+
         UserRole role,
         Long userId,
         String username,
