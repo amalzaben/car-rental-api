@@ -1,6 +1,7 @@
 package com.rentgo.car_rental_service.service;
 
 import com.rentgo.car_rental_service.dto.controller.response.CarListItemResponse;
+import com.rentgo.car_rental_service.dto.controller.response.CarPictureResponse;
 import com.rentgo.car_rental_service.dto.controller.response.CarResponse;
 import com.rentgo.car_rental_service.dto.service.CreateCarCommand;
 import com.rentgo.car_rental_service.exception.ForbiddenException;
@@ -57,7 +58,6 @@ public class CarService {
 
         validateManager(command.managerId());
 
-        // Normalize colors: trim + lower
         List<String> normalizedColors = command.colors().stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
@@ -66,27 +66,30 @@ public class CarService {
                 .distinct()
                 .toList();
 
-        Car car = carMapper.toEntity(new CreateCarCommand(
-                command.managerId(),command.family(), command.type(), command.seats(),
-                command.fuel(), command.price(), command.description(),
-                command.picture(), normalizedColors, CarStatus.available
-        ));
+        Car car = Car.builder()
+                .family(command.family())
+                .type(command.type())
+                .seats(command.seats())
+                .fuel(command.fuel())
+                .price(command.price())
+                .description(command.description())
+                .status(CarStatus.available)
+                .pictureData(command.pictureData())
+                .pictureContentType(command.pictureContentType())
+                .build();
 
         Car savedCar = carRepository.save(car);
 
-        // Resolve/create colors + create join rows
-        // (عشان مش ضروري كل ما بدي اضيف لون جديد اعدل في ايدي على الداتا بيس)
         List<Color> resolvedColors = new ArrayList<>();
         for (String colorName : normalizedColors) {
             Color color = colorRepository.findByName(colorName)
-                    .orElseGet(() -> colorRepository.save(
-                            Color.builder().name(colorName).build()
-                    ));
+                    .orElseGet(() -> colorRepository.save(Color.builder().name(colorName).build()));
             resolvedColors.add(color);
 
             CarColor join = CarColor.builder()
                     .car(savedCar)
                     .color(color)
+                    .available(true)
                     .build();
             carColorRepository.save(join);
         }
@@ -99,11 +102,12 @@ public class CarService {
                 savedCar.getFuel(),
                 savedCar.getPrice(),
                 savedCar.getDescription(),
-                savedCar.getPicture(),
+                null, // do NOT return raw bytes here
                 savedCar.getStatus(),
                 resolvedColors.stream().map(Color::getName).toList()
         );
     }
+
 
     public CarResponse getCarDetails(Long carId) {
 
@@ -160,5 +164,23 @@ public class CarService {
         Long maxId = carRepository.findMaxId();
         return maxId + 1;
     }
+
+    @Transactional(readOnly = true)
+    public CarPictureResponse getCarPicture(Long carId) {
+
+        Car car = carRepository.findById(carId)
+                .orElseThrow(() -> new ResourceNotFoundException("Car not found"));
+
+        if (car.getPictureData() == null || car.getPictureData().length == 0) {
+            throw new ResourceNotFoundException("Car picture not found");
+        }
+
+        return new CarPictureResponse(
+                car.getPictureData(),
+                car.getPictureContentType()
+        );
+    }
+
+
 
 }

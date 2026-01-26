@@ -68,4 +68,15 @@ public interface CarRepository extends JpaRepository<Car, Long> {
 
     @Query("SELECT COALESCE(MAX(c.id), 0) FROM Car c")
     Long findMaxId();
+
+    @Query("""
+    SELECT COUNT(c)
+    FROM Car c
+    WHERE c.status = :status
+""")
+    long countByStatus(
+            @Param("status") CarStatus status
+    );
+
+
 }

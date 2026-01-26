@@ -13,7 +13,7 @@ public record CarResponse(
         String fuel,
         BigDecimal price,
         String description,
-        String picture,
+         byte[] picture,
         CarStatus status,
         List<String> colors
 ) {

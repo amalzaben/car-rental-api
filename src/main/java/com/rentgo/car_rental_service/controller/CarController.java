@@ -2,9 +2,12 @@ package com.rentgo.car_rental_service.controller;
 
 import com.rentgo.car_rental_service.dto.controller.request.CreateCarRequest;
 import com.rentgo.car_rental_service.dto.controller.response.CarListItemResponse;
+import com.rentgo.car_rental_service.dto.controller.response.CarPictureResponse;
 import com.rentgo.car_rental_service.dto.controller.response.CarResponse;
 import com.rentgo.car_rental_service.dto.service.CreateCarCommand;
+import com.rentgo.car_rental_service.exception.ResourceNotFoundException;
 import com.rentgo.car_rental_service.mapper.CarMapper;
+import com.rentgo.car_rental_service.model.Car;
 import com.rentgo.car_rental_service.model.ENUM.CarStatus;
 import com.rentgo.car_rental_service.service.CarService;
 import jakarta.validation.Valid;
@@ -13,9 +16,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -29,15 +34,29 @@ public class CarController {
     @Autowired
     private  CarMapper carMapper;
 
-    @PostMapping
-    public ResponseEntity<CarResponse> addNewCar(@RequestBody @Valid CreateCarRequest request) {
-        CreateCarCommand command = carMapper.toCommand(request);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CarResponse> addNewCar(
+            @RequestPart("data") @Valid CreateCarRequest request,
+            @RequestPart("picture") MultipartFile picture
+    ) {
+        CreateCarCommand command = carMapper.toCommand(request, picture);
         CarResponse response = carService.addNewCar(command);
 
         return ResponseEntity
                 .created(URI.create("/cars/" + response.id()))
                 .body(response);
     }
+    @GetMapping("/{carId}/picture")
+    public ResponseEntity<byte[]> getCarPicture(@PathVariable Long carId) {
+
+        CarPictureResponse picture = carService.getCarPicture(carId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(picture.contentType()))
+                .body(picture.data());
+    }
+
+
 
     @GetMapping("/{carId}")
     public ResponseEntity<CarResponse> getCarDetails(@PathVariable Long carId) {

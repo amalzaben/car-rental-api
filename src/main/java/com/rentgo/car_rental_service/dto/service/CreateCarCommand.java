@@ -7,15 +7,16 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record CreateCarCommand(
-        @NotBlank Long managerId,
-        @NotBlank @Size(max = 20) String family,
-        @NotBlank @Size(max = 20) String type,
-        @NotNull @Min(4) Integer seats,
-        @Size(max = 20) String fuel,
-        @NotNull @Positive BigDecimal price,
+        @NotNull Long managerId,
+        @NotBlank String family,
+        @NotBlank String type,
+        @NotNull Integer seats,
+        @NotBlank String fuel,
+        @NotNull BigDecimal price,
         String description,
-        @Size(max = 255) String picture,
-        @NotNull @Size(min = 1) List<@NotBlank String> colors,
-        @NotNull CarStatus carStatus
+        @NotNull byte[] pictureData,
+        @NotBlank String pictureContentType,
+        List<String> colors,
+        @NotNull CarStatus status
 ) {
 }

@@ -37,8 +37,13 @@ public class Car {
     @Column(name="description", columnDefinition="TEXT")
     private String description;
 
-    @Column(name="picture", length=255)
-    private String picture;
+    @Lob
+    @Column(name = "picture_data")
+    private byte[] pictureData;
+
+    @Column(name = "picture_content_type", length = 50)
+    private String pictureContentType;
+
 
     @Enumerated(EnumType.STRING)
     @Column(name="status", nullable=false, length=30)

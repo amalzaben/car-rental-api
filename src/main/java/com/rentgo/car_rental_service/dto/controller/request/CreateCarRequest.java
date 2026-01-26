@@ -11,7 +11,6 @@ public record CreateCarRequest(
         String fuel,
         BigDecimal price,
         String description,
-        String picture,
         List<String> colors
 ) {
 }

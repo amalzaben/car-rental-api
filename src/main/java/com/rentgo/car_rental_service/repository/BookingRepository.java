@@ -2,12 +2,14 @@ package com.rentgo.car_rental_service.repository;
 
 import com.rentgo.car_rental_service.model.Booking;
 import com.rentgo.car_rental_service.model.ENUM.BookingStatus;
+import com.rentgo.car_rental_service.model.ENUM.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
@@ -87,6 +89,45 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("statuses") Collection<BookingStatus> statuses,
             @Param("requestedStartDate") LocalDate requestedStartDate,
             @Param("requestedEndDate") LocalDate requestedEndDate
+    );
+
+    @Query("""
+    SELECT COUNT(b)
+    FROM Booking b
+    WHERE b.status = :status
+      AND b.startDate BETWEEN :start AND :end
+""")
+    long countByStatusAndStartDateBetween(
+            @Param("status") BookingStatus status,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
+
+
+    @Query("""
+    SELECT COALESCE(SUM(b.totalPrice), 0)
+    FROM Booking b
+    JOIN b.payment p
+    WHERE p.status = :paymentStatus
+      AND b.startDate BETWEEN :start AND :end
+""")
+    BigDecimal sumTotalPriceForPaidBookingsByStartDateBetween(
+            @Param("paymentStatus") PaymentStatus paymentStatus,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
+
+    @Query("""
+    SELECT COUNT(b)
+    FROM Booking b
+    JOIN b.payment p
+    WHERE p.status = :paymentStatus
+      AND b.startDate BETWEEN :start AND :end
+""")
+    long countPaidBookingsByStartDateBetween(
+            @Param("paymentStatus") PaymentStatus paymentStatus,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
     );
 
 
